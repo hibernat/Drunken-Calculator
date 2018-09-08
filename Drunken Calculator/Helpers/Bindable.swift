@@ -7,20 +7,30 @@
 //
 
 class Bindable<T> {
+    
     typealias Listener = ((T)->Void)
+    
     var listener: Listener?
     var value: T {
         didSet { self.listener?(value) }
     }
     
+    
+    //MARK: - Initializers
+    // ----------------------------------------------------------------------------------------------------------------
     init(_ value: T) {
         self.value = value
     }
     
+    
+    //MARK: - Methods
+    // ----------------------------------------------------------------------------------------------------------------
     func bind(_ listener: Listener?) {
         self.listener = listener
     }
     
+    
+    // ----------------------------------------------------------------------------------------------------------------
     func bindAndFire(_ listener: Listener?) {
         self.listener = listener
         self.listener?(self.value)

@@ -17,7 +17,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                      didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?)
         -> Bool {
         self.window = self.window ?? UIWindow()
-        self.window?.backgroundColor = .white
+        self.window?.backgroundColor = UIColor(white: 0.7, alpha: 1)
         self.window?.rootViewController = CalculatorContainerController()
         self.window?.makeKeyAndVisible()
         return true

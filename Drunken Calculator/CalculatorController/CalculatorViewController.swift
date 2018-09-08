@@ -18,17 +18,9 @@ class CalculatorViewController: UIViewController {
     
     static let maxCountOfButtonsForShuffle = 5
     static let maxCountOfButtonsForRotation = 5
-    
-    // going from top-left corner down by rows
-    // index in array: button as created in the CalculatorViewController - CalculatorViewViewModel.Button(rawValue: i)
-    // value in array at index: position where placed in the view, starting top-left corner, going down by rows
-    static let initialButtonLayoutPortrait = [16, 12, 13, 14, 8, 9, 10, 4, 5, 6, 17, 18, 3, 19, 15, 11, 7, 0, 1, 2]
-    static let initialButtonLayoutLandscape = [16, 11, 12, 13, 6, 7, 8, 1, 2, 3, 17, 18, 0, 19, 14, 9, 4, 5, 10, 15]
-    static let buttonCount = 20 // how many buttons the calculator has
-    
+    static let buttonCount = 20
     
     // MARK: - Properties
-    
     // ----------------------------------------------------------------------------------------------------------------
     var viewModel = CalculatorViewViewModel()
     var calculatorView: CalculatorView { return self.view as! CalculatorView }
@@ -37,29 +29,17 @@ class CalculatorViewController: UIViewController {
     private var labelDisplay: UILabel!
     private var tagsOfAnimatedButtons = Set<Int>() // animated means shuffled or rotated
    
+    
     //MARK: - Methods
-    
-    
     // ----------------------------------------------------------------------------------------------------------------
-    // this is the only place where calculator view and subviews are set
-    // layout is done in CalculatorView.layoutSubviews
+    // view and subviews are set up
+    // layout is done in CalculatorView.layoutSubviews and workaroud here in viewDidLayout
     override func loadView() {
         // view
-        let view = CalculatorView(frame: UIScreen.main.bounds)
-        view.backgroundColor = UIColor(white: 0.7, alpha: 1)
-        view.tag = 1000 // not to be in conflict with button tags
-        view.isUserInteractionEnabled = true
-        view.isMultipleTouchEnabled = false
-        view.buttonAction = { [weak self] (tag) in self?.buttonPressed(buttonTag: tag) }
+        let view = CalculatorView(frame: .zero)
         self.view = view
         // subview - display
         let display = CalculatorDisplay()
-        display.tag = 1001 // not to be in conflict with button tags
-        display.textAlignment = .right
-        display.numberOfLines = 1
-        display.minimumScaleFactor = 0.4
-        display.adjustsFontSizeToFitWidth = true
-        display.isUserInteractionEnabled = true
         view.addSubview(display)
         self.labelDisplay = display
         // subview - buttons
@@ -92,7 +72,16 @@ class CalculatorViewController: UIViewController {
     // ----------------------------------------------------------------------------------------------------------------
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.view.backgroundColor = UIColor(white: 0.7, alpha: 1)
+        self.view.tag = 1000 // not to be in conflict with button tags
+        self.view.isUserInteractionEnabled = true
+        self.view.isMultipleTouchEnabled = false
+        self.view.translatesAutoresizingMaskIntoConstraints = false
+        self.view.contentMode = .redraw
+        self.calculatorView.buttonAction = { [weak self] (tag) in self?.buttonPressed(buttonTag: tag) }
+        self.labelDisplay.tag = 1001 // not to be in conflict with button tags
         self.bindViewModel()
+        self.calculatorView.buttonLayout = self.calculatorView.initialLayout(forViewSize: self.view.bounds.size)
         // gesture recognizer for deletion of the last digit
         let grLastDigit = UISwipeGestureRecognizer(target: self, action: #selector(deleteLastDigit))
         grLastDigit.direction = .right
@@ -102,10 +91,44 @@ class CalculatorViewController: UIViewController {
     
     
     // ----------------------------------------------------------------------------------------------------------------
+    /// this is a workaround
+    /// all the application was designed (intentionally) without autolayout, BUT I am using UILabel
+    /// and using Safe Area layour guides
+    /// as a sideeffect, UILabel automatically creates constraints from intrinsic content size
+    /// and display is not properly layout. This is a fix.
+    override func viewDidLayoutSubviews() {
+        let safeArea = self.view.safeAreaLayoutGuide.layoutFrame
+        let width = safeArea.width * (1 - CalculatorView.layoutMargin * 2)
+        let height = safeArea.height * CalculatorView.layoutDisplayHeight
+        let x = safeArea.width * CalculatorView.layoutMargin
+        let y = safeArea.height * CalculatorView.layoutMargin
+        self.labelDisplay.frame = CGRect(x: x, y: y, width: width, height: height)
+    }
+    
+    
+    // ----------------------------------------------------------------------------------------------------------------
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        let newLayout = self.calculatorView.initialLayout(forViewSize: size)
+        self.calculatorView.buttonLayout = CalculatorView.ButtonLayout(buttonsInRow: newLayout.buttonsInRow,
+                                                                       buttonCount: newLayout.buttonCount,
+                                                                       tagToPosition: newLayout.tagToPosition )
+        self.view.setNeedsLayout()
+        super.viewWillTransition(to: size, with: coordinator)
+        // when transition is completed, rotate all buttons to normal position
+        coordinator.animate(alongsideTransition: { context in
+            for tag in 0..<Self.buttonCount {
+                if let button = context.containerView.viewWithTag(tag) {
+                    button.transform = CGAffineTransform.identity
+                }
+            }
+        })
+    }
+    
+
+    // ----------------------------------------------------------------------------------------------------------------
     func buttonPressed(buttonTag: Int) {
         // do the calculation
         guard let button = CalculatorViewViewModel.Button(rawValue: buttonTag) else { return }
-        UIDevice.current.playInputClick()
         self.viewModel.pressed(button: button )
         // animate buttons
         let rotation = self.buttonTagsForAnimation(maxCount: Self.maxCountOfButtonsForRotation)
@@ -113,6 +136,7 @@ class CalculatorViewController: UIViewController {
         self.animateButtons(tagsRotated: rotation, tagsShuffled: shuffle)
     }
 
+    
     // ----------------------------------------------------------------------------------------------------------------
     func animateButtons(tagsRotated rotated: [Int], tagsShuffled shuffled: [Int]) {
         func bringForward(tags: [Int]) {
@@ -170,10 +194,12 @@ class CalculatorViewController: UIViewController {
         self.viewModel.deleteLastDigitFromDisplay()
     }
     
+    
     // ----------------------------------------------------------------------------------------------------------------
     @objc func animateButtonsToInitialLayoutPositions() {
         
     }
+    
     
     // ----------------------------------------------------------------------------------------------------------------
     /// binds view with viewModel

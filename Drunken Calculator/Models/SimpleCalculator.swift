@@ -44,9 +44,8 @@ class SimpleCalculator {
     
     static let maxLengthOfInput = 9
     
+    
     //MARK: - Properties
-    
-    
     // ----------------------------------------------------------------------------------------------------------------
     var result: Result {
         if self.isInError { return .error }
@@ -70,17 +69,15 @@ class SimpleCalculator {
     private var inputFractionDigits: Int? // how many fraction numbers is entered
     private var inputMinusSign = false
     
+    
     //MARK: - Initializers
-    
-    
     // ----------------------------------------------------------------------------------------------------------------
     init() {
         
     }
     
+    
     //MARK: - Methods
-    
-    
     // ----------------------------------------------------------------------------------------------------------------
     /// reset of the calculator
     /// equivalent of the C button on real calculator

@@ -24,24 +24,21 @@ struct CalculatorViewViewModel {
         case squareRoot
     }
     
+    
     // MARK: - Properties
-    
-    
     // ----------------------------------------------------------------------------------------------------------------
     var model = SimpleCalculator()
     var displayText: Bindable<String>
     
+    
     //MARK: - Initializers
-    
-    
     // ----------------------------------------------------------------------------------------------------------------
     init() {
         self.displayText = Bindable("0")
     }
     
+    
     // MARK: - Methods
-    
-    
     // ----------------------------------------------------------------------------------------------------------------
     /// updates displayText property (bound to display in the view)
     /// - Parameter result: value used for updating the displayText

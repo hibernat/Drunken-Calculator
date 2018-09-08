@@ -22,12 +22,15 @@ class CalculatorButton: UIView {
     static let backgroundColorOperation = UIColor(red: 249/255, green: 216/255, blue: 61/255, alpha: 1)
     static let backgroundColorClear = UIColor.orange
     
+    
     //MARK: - Properties
+    // ----------------------------------------------------------------------------------------------------------------
     var text: String?
     var textColor: UIColor?
     
-    //MARK: - Initializers
     
+    //MARK: - Initializers
+    // ----------------------------------------------------------------------------------------------------------------
     init(buttonType: ButtonType) {
         super.init(frame: .zero)
         switch buttonType {
@@ -46,14 +49,18 @@ class CalculatorButton: UIView {
         self.layer.borderColor = UIColor.black.cgColor
         self.layer.cornerRadius = 6
         self.clipsToBounds = true
+        self.contentMode = .redraw
     }
     
+    
+    // ----------------------------------------------------------------------------------------------------------------
     required init?(coder aDecoder: NSCoder) {
         fatalError("CalculatorButton.init?(coder) is not implemented")
     }
     
-    //MARK: - Methods
     
+    //MARK: - Methods
+    // ----------------------------------------------------------------------------------------------------------------
     override func draw(_ rect: CGRect) {
         guard let text = self.text, let color = self.textColor else { return }
         let contextRect = self.bounds.insetBy(dx: 0, dy: self.bounds.height*0.2)
