@@ -67,7 +67,7 @@ class CalculatorViewController: UIViewController {
     // ----------------------------------------------------------------------------------------------------------------
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.view.backgroundColor = UIColor(white: 0.7, alpha: 1)
+        self.view.backgroundColor = .white
         self.view.tag = 1000 // not to be in conflict with button tags
         self.view.isUserInteractionEnabled = true
         self.view.isMultipleTouchEnabled = false
