@@ -8,23 +8,18 @@
 
 import UIKit
 
-protocol CalculatorViewControllerDelegate {
-    func buttonAnimationStarted(rotated: [Int], shuffled: [Int]) // parameters are tags of animated buttons
-}
-
 class CalculatorViewController: UIViewController {
     
     private typealias `Self` = CalculatorViewController
     
-    static let maxCountOfButtonsForShuffle = 5
-    static let maxCountOfButtonsForRotation = 5
-    static let buttonCount = 20
+    static let maxCountOfButtonsForShuffle = 6
+    static let maxCountOfButtonsForRotation = 6
+   
     
     // MARK: - Properties
     // ----------------------------------------------------------------------------------------------------------------
     var viewModel = CalculatorViewViewModel()
     var calculatorView: CalculatorView { return self.view as! CalculatorView }
-    var calculatorDelegate: CalculatorViewControllerDelegate?
     
     private var labelDisplay: UILabel!
     private var tagsOfAnimatedButtons = Set<Int>() // animated means shuffled or rotated
@@ -43,7 +38,7 @@ class CalculatorViewController: UIViewController {
         view.addSubview(display)
         self.labelDisplay = display
         // subview - buttons
-        for i in 0..<Self.buttonCount {
+        for i in 0..<CalculatorView.buttonCount {
             let button: CalculatorButton
             switch CalculatorViewViewModel.Button(rawValue: i)! {
             case .zero, .one, .two, .three, .four, .five, .six, .seven, .eight, .nine:
@@ -58,8 +53,8 @@ class CalculatorViewController: UIViewController {
             case .clear:
                 button = CalculatorButton(buttonType: .clear)
                 button.text = "C"
-            case .add, .subtract, .multiply, .divide, .plusMinus, .square, .squareRoot:
-                let buttonFaces = ["+", "-", "×", "÷", "\u{207A}\u{2215}\u{208B}" /* +/- */, "x\u{00B2}" /* x2 */, "√"]
+            case .add, .subtract, .multiply, .divide, .plusMinus, .square, .squareRoot, .inverse, .factorial, .pi, .euler:
+                let buttonFaces = ["+", "-", "×", "÷", "\u{207A}\u{2215}\u{208B}", "x\u{00B2}", "√", "1\u{2215}x", "n!", "\u{03C0}", "\u{212F}"]
                 button = CalculatorButton(buttonType: .operation)
                 button.text = buttonFaces[i - CalculatorViewViewModel.Button.add.rawValue]
             }
@@ -81,27 +76,32 @@ class CalculatorViewController: UIViewController {
         self.calculatorView.buttonAction = { [weak self] (tag) in self?.buttonPressed(buttonTag: tag) }
         self.labelDisplay.tag = 1001 // not to be in conflict with button tags
         self.bindViewModel()
-        self.calculatorView.buttonLayout = self.calculatorView.initialLayout(forViewSize: self.view.bounds.size)
         // gesture recognizer for deletion of the last digit
         let grLastDigit = UISwipeGestureRecognizer(target: self, action: #selector(deleteLastDigit))
         grLastDigit.direction = .right
         grLastDigit.numberOfTouchesRequired = 1
         self.labelDisplay.addGestureRecognizer(grLastDigit)
+        // gesture recognizer for buttons to initial positions
+        let grInitialPositions = UISwipeGestureRecognizer(target: self, action: #selector(buttonsToInitialPositions))
+        grInitialPositions.direction = .left
+        grInitialPositions.numberOfTouchesRequired = 1
+        self.labelDisplay.addGestureRecognizer(grInitialPositions)
+        self.calculatorView.buttonLayout = self.calculatorView.initialLayout(forViewSize: UIScreen.main.bounds.size)
     }
     
     
     // ----------------------------------------------------------------------------------------------------------------
     /// this is a workaround
-    /// all the application was designed (intentionally) without autolayout, BUT I am using UILabel
-    /// and using Safe Area layour guides
-    /// as a sideeffect, UILabel automatically creates constraints from intrinsic content size
-    /// and display is not properly layout. This is a fix.
+    /// all the application was designed (intentionally) without autolayout,
+    /// BUT I am using UILabel and Safe Area layout guides
+    /// As a sideeffect, UILabel automatically creates constraints from intrinsic content size
+    /// and display is not properly laid out. This is a fix.
     override func viewDidLayoutSubviews() {
         let safeArea = self.view.safeAreaLayoutGuide.layoutFrame
-        let width = safeArea.width * (1 - CalculatorView.layoutMargin * 2)
+        let width = safeArea.width * (1 - CalculatorView.layoutMarginLeftRight * 2)
         let height = safeArea.height * CalculatorView.layoutDisplayHeight
-        let x = safeArea.width * CalculatorView.layoutMargin
-        let y = safeArea.height * CalculatorView.layoutMargin
+        let x = safeArea.width * CalculatorView.layoutMarginLeftRight + safeArea.origin.x
+        let y = safeArea.height * CalculatorView.layoutMarginTop + safeArea.origin.y
         self.labelDisplay.frame = CGRect(x: x, y: y, width: width, height: height)
     }
     
@@ -116,7 +116,7 @@ class CalculatorViewController: UIViewController {
         super.viewWillTransition(to: size, with: coordinator)
         // when transition is completed, rotate all buttons to normal position
         coordinator.animate(alongsideTransition: { context in
-            for tag in 0..<Self.buttonCount {
+            for tag in 0..<CalculatorView.buttonCount {
                 if let button = context.containerView.viewWithTag(tag) {
                     button.transform = CGAffineTransform.identity
                 }
@@ -124,20 +124,12 @@ class CalculatorViewController: UIViewController {
         })
     }
     
-
-    // ----------------------------------------------------------------------------------------------------------------
-    func buttonPressed(buttonTag: Int) {
-        // do the calculation
-        guard let button = CalculatorViewViewModel.Button(rawValue: buttonTag) else { return }
-        self.viewModel.pressed(button: button )
-        // animate buttons
-        let rotation = self.buttonTagsForAnimation(maxCount: Self.maxCountOfButtonsForRotation)
-        let shuffle = self.buttonTagsForAnimation(maxCount: Self.maxCountOfButtonsForShuffle)
-        self.animateButtons(tagsRotated: rotation, tagsShuffled: shuffle)
-    }
-
     
     // ----------------------------------------------------------------------------------------------------------------
+    // Performs animation of calculator buttons
+    /// - Parameters:
+    ///   - rotated: tags of buttons to be rotated
+    ///   - shuffled: tags of buttons to be shuffled
     func animateButtons(tagsRotated rotated: [Int], tagsShuffled shuffled: [Int]) {
         func bringForward(tags: [Int]) {
             for tag in tags {
@@ -178,26 +170,44 @@ class CalculatorViewController: UIViewController {
         }
         animator.addCompletion { [weak self] (_) in
             if let `self` = self {
+                // these buttons are again available for animations
                 self.tagsOfAnimatedButtons.subtract(rotated)
                 self.tagsOfAnimatedButtons.subtract(shuffled)
             }
         }
+        // these buttons are not available for other animation, until this animation is completed
         self.tagsOfAnimatedButtons.formUnion(rotated)
         self.tagsOfAnimatedButtons.formUnion(shuffled)
         animator.startAnimation()
-        self.calculatorDelegate?.buttonAnimationStarted(rotated: rotated, shuffled: shuffled)
     }
     
     
     // ----------------------------------------------------------------------------------------------------------------
-    @objc func deleteLastDigit() {
-        self.viewModel.deleteLastDigitFromDisplay()
-    }
-    
-    
-    // ----------------------------------------------------------------------------------------------------------------
-    @objc func animateButtonsToInitialLayoutPositions() {
-        
+    /// Sets buttons to positions set by the layout in parameter
+    /// Also sets the layout in the parameter to the CalculatorView as the new layout
+    /// - Parameter layout: new layout of calculator buttons
+    private func animateAllButtonsToLayout(_ layout: CalculatorView.ButtonLayout) {
+        self.calculatorView.buttonLayout = layout
+        let animator = UIViewPropertyAnimator(duration: 1, curve: .easeInOut)
+        animator.addAnimations {
+            for tag in layout.tagToPosition {
+                if let button = self.view.viewWithTag(tag) {
+                    button.transform = CGAffineTransform.identity
+                    if let newFrame = self.calculatorView.frameForButton(withTag: tag) {
+                        button.frame = newFrame
+                    }
+                }
+            }
+        }
+        animator.addCompletion { [weak self] (_) in
+            if let `self` = self {
+                // all buttons are available for animations again
+                self.tagsOfAnimatedButtons.subtract(0..<CalculatorView.buttonCount)
+            }
+        }
+        // no buton is available for other animation, until this animation is completed
+        self.tagsOfAnimatedButtons = Set<Int>(0..<CalculatorView.buttonCount)
+        animator.startAnimation()
     }
     
     
@@ -217,20 +227,38 @@ class CalculatorViewController: UIViewController {
             return Int(arc4random_uniform(UInt32(upTo)))
         }
         var result = Set<Int>()
-        let buttonTagsAvailableForAnimation = Array<Int>(Set<Int>(0..<Self.buttonCount).subtracting(self.tagsOfAnimatedButtons))
+        let buttonTagsAvailableForAnimation = Array<Int>(Set<Int>(0..<CalculatorView.buttonCount).subtracting(self.tagsOfAnimatedButtons))
         let count = min(buttonTagsAvailableForAnimation.count, random(maxCount) + 1)
         for _ in 0..<count {
             result.insert(buttonTagsAvailableForAnimation[random(buttonTagsAvailableForAnimation.count)])
         }
         return Array<Int>(result)
     }
+}
+
+extension CalculatorViewController {
+    
+    // ----------------------------------------------------------------------------------------------------------------
+    @objc func deleteLastDigit() {
+        self.viewModel.deleteLastDigitFromDisplay()
+    }
     
     
     // ----------------------------------------------------------------------------------------------------------------
-    /// sets buttons to initial positions
-    private func resetButtonsToLayout(_ layout: [Int]) {
-        
+    @objc func buttonsToInitialPositions() {
+        let initialLayout = self.calculatorView.initialLayout(forViewSize: self.view.bounds.size)
+        self.animateAllButtonsToLayout(initialLayout)
     }
     
+    
+    // ----------------------------------------------------------------------------------------------------------------
+    func buttonPressed(buttonTag: Int) {
+        // do the calculation
+        guard let button = CalculatorViewViewModel.Button(rawValue: buttonTag) else { return }
+        self.viewModel.pressed(button: button )
+        // animate buttons
+        let rotation = self.buttonTagsForAnimation(maxCount: Self.maxCountOfButtonsForRotation)
+        let shuffle = self.buttonTagsForAnimation(maxCount: Self.maxCountOfButtonsForShuffle)
+        self.animateButtons(tagsRotated: rotation, tagsShuffled: shuffle)
+    }
 }
-

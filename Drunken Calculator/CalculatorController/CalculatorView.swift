@@ -19,15 +19,18 @@ class CalculatorView: UIView {
         var tagToPosition: Array<Int>
     }
     
-    static let layoutMargin: CGFloat = 0.06
+    static let layoutMarginTop: CGFloat = 0.08
+    static let layoutMarginBottom: CGFloat = 0.03
+    static let layoutMarginLeftRight: CGFloat = 0.06
     static let layoutDisplayHeight: CGFloat = 0.13
     static let layoutSpacingBelowDisplay: CGFloat = 0.06
-    static let layoutButtonSpacing: CGFloat = 0.03
+    static let layoutButtonSpacing: CGFloat = 0.025
+    static let buttonCount = 24
     
     //MARK: - Properties
     // ----------------------------------------------------------------------------------------------------------------
     var buttonLayout: ButtonLayout?
-    var buttonAction: ButtonAction?
+    var buttonAction: ButtonAction?  // func/closure called when calculator button is pressed
     
     
     //MARK: - Methods
@@ -39,9 +42,9 @@ class CalculatorView: UIView {
                     subview.frame = frame
                 }
             } else if subview is CalculatorDisplay {
-                subview.frame.origin = CGPoint(x: self.bounds.origin.x + Self.layoutMargin * self.bounds.size.width,
-                                               y: self.bounds.origin.y + Self.layoutMargin * self.bounds.size.height )
-                subview.frame.size = CGSize(width: self.bounds.size.width * (1 - 2 * Self.layoutMargin),
+                subview.frame.origin = CGPoint(x: self.bounds.origin.x + Self.layoutMarginLeftRight * self.bounds.size.width,
+                                               y: self.bounds.origin.y + Self.layoutMarginTop * self.bounds.size.height )
+                subview.frame.size = CGSize(width: self.bounds.size.width * (1 - 2 * Self.layoutMarginLeftRight),
                                             height: self.bounds.size.height * Self.layoutDisplayHeight )
             }
         }
@@ -91,17 +94,17 @@ class CalculatorView: UIView {
             tag >= 0 && tag < buttonLayout.tagToPosition.count else { return nil }
         let buttonsInRow = CGFloat(buttonLayout.buttonsInRow)
         let buttonsInColumn = CGFloat(buttonLayout.buttonCount) / buttonsInRow
-        let buttonWidth: CGFloat = (1 - 2 * Self.layoutMargin - (buttonsInRow - 1) * Self.layoutButtonSpacing) / buttonsInRow
-        let buttonHeight: CGFloat = (1 - 2 * Self.layoutMargin - (buttonsInColumn - 1) * Self.layoutButtonSpacing -
-            Self.layoutDisplayHeight - Self.layoutSpacingBelowDisplay) / buttonsInColumn
+        let buttonWidth: CGFloat = (1 - 2 * Self.layoutMarginLeftRight - (buttonsInRow - 1) * Self.layoutButtonSpacing) / buttonsInRow
+        let buttonHeight: CGFloat = (1 -  Self.layoutMarginTop - Self.layoutDisplayHeight - Self.layoutSpacingBelowDisplay -
+            (buttonsInColumn - 1) * Self.layoutButtonSpacing - Self.layoutMarginBottom) / buttonsInColumn
         
         // calculate position of the button in the layout
         let buttonPosition = buttonLayout.tagToPosition[tag]
         let row = buttonPosition / buttonLayout.buttonsInRow
         let column = buttonPosition % buttonLayout.buttonsInRow
         // finally calculating the frame
-        let originX = (Self.layoutMargin + CGFloat(column) * (buttonWidth + Self.layoutButtonSpacing)) * self.bounds.size.width
-        let originY = (Self.layoutMargin + Self.layoutDisplayHeight + Self.layoutSpacingBelowDisplay +
+        let originX = (Self.layoutMarginLeftRight + CGFloat(column) * (buttonWidth + Self.layoutButtonSpacing)) * self.bounds.size.width
+        let originY = (Self.layoutMarginTop + Self.layoutDisplayHeight + Self.layoutSpacingBelowDisplay +
             CGFloat(row) * (buttonHeight + Self.layoutButtonSpacing)) * self.bounds.size.height
         return CGRect(x: originX,
                       y: originY,
@@ -138,20 +141,24 @@ class CalculatorView: UIView {
         // index in array: button tag
         // value in array at index: position where placed in the view, starting top-left corner, going down by rows
         if size.width > size.height {  // landscape
-            return CalculatorView.ButtonLayout(buttonsInRow: 5, buttonCount: 20, tagToPosition: [16, 11, 12, 13, 6, 7, 8, 1, 2, 3, 17, 18, 0, 19, 14, 9, 4, 5, 10, 15])
+            return CalculatorView.ButtonLayout(buttonsInRow: 6,
+                                               buttonCount: Self.buttonCount,
+                                               tagToPosition: [20, 14, 15, 16, 8, 9, 10, 2, 3, 4, 21, 22, 0, 23, 17, 11, 5, 1, 6, 12, 18, 19, 7, 13])
         } else {  // portrait
-            return CalculatorView.ButtonLayout(buttonsInRow: 4,  buttonCount: 20, tagToPosition: [16, 12, 13, 14, 8, 9, 10, 4, 5, 6, 17, 18, 3, 19, 15, 11, 7, 0, 1, 2])
+            return CalculatorView.ButtonLayout(buttonsInRow: 4,
+                                               buttonCount: Self.buttonCount,
+                                               tagToPosition: [20, 16, 17, 18, 12, 13, 14, 8, 9, 10, 21, 22, 3, 23, 19, 15, 11, 0, 1, 2, 4, 7, 5, 6])
         }
     }
     
     
     // ----------------------------------------------------------------------------------------------------------------
-    /// highlights the button
+    /// highlights the button, all other butons are set as not highlighted
     /// - Parameter button: UIView that should be highlighted
     private func animateButtonHighlight(for button: UIView) {
         for view in self.subviews where view is CalculatorButton {
             UIView.animate(withDuration: 0.3) {
-                view.alpha = (view === button) ? 0.75 : 1
+                view.alpha = (view === button) ? 0.7 : 1
             }
         }
     }

@@ -68,4 +68,13 @@ class Calculator_Tests: XCTestCase {
         } else { XCTFail() }
     }
     
+    func test4() {
+        calculator.reset()
+        calculator.input(operation: .digit(4))
+        calculator.input(operation: .factorial)
+        if case .value(let result) = calculator.result {
+            XCTAssertEqual(result, 99)
+        } else { XCTFail() }
+    }
+
 }

@@ -12,16 +12,20 @@ struct CalculatorViewViewModel {
     
     enum Button: Int {
         case zero, one, two, three, four, five, six, seven, eight, nine
-        case decimalSeparator
+        case decimalSeparator // 10
         case equals
         case clear
         case add
-        case subtract
+        case subtract //14
         case multiply
         case divide
         case plusMinus
-        case square
+        case square // 18
         case squareRoot
+        case inverse
+        case factorial
+        case pi // 22
+        case euler
     }
     
     
@@ -45,11 +49,12 @@ struct CalculatorViewViewModel {
     func updateDisplayText(by result: SimpleCalculator.Result) {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 5
         formatter.usesGroupingSeparator = false
         
         switch result {
         case .value(let value):
-            if abs(value) > 1_000_000_000 { formatter.numberStyle = .scientific }
+            if value != 0 && (abs(value) > 1_000_000_000 || abs(value) < 0.001) { formatter.numberStyle = .scientific }
             self.displayText.value = formatter.string(from: NSNumber(value: value))!
         case.error:
             self.displayText.value = "Error"
@@ -74,30 +79,18 @@ struct CalculatorViewViewModel {
     /// just an example of possible mapping (otherwise this looks weird)
     /// - Parameter button: button pressed
     func pressed(button: Button) {
+        let tagMapping: [Int:SimpleCalculator.Operation] = [10:.comma, 11:.equals, 13:.add, 14:.subtract, 15:.multiply, 16:.divide, 17:.plusMinus,
+                                                            18:.square, 19:.squareRoot, 20:.inverse, 21:.factorial, 22:.pi, 23:.euler ]
         switch button {
         case .zero, .one, .two, .three, .four, .five, .six, .seven, .eight, .nine:
             let digit = button.rawValue
             model.input(operation: .digit(digit))
-        case .decimalSeparator:
-            model.input(operation: .comma)
-        case .equals:
-            model.input(operation: .equals)
         case .clear:
             model.reset()
-        case .add:
-            model.input(operation: .add)
-        case .subtract:
-            model.input(operation: .subtract)
-        case .multiply:
-            model.input(operation: .multiply)
-        case .divide:
-            model.input(operation: .divide)
-        case .plusMinus:
-            model.input(operation: .plusMinus)
-        case .square:
-            model.input(operation: .square)
-        case .squareRoot:
-            model.input(operation: .squareRoot)
+        default:
+            if let operation = tagMapping[button.rawValue] {
+                model.input(operation: operation)
+            }
         }
         self.updateDisplayText(by: self.model.result)
     }

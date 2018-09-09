@@ -34,12 +34,17 @@ class SimpleCalculator {
         case squareRoot
         case equals
         case deleteLastDigit
+        case inverse
+        case factorial
+        case pi
+        case euler
     }
     
     private enum CalculatorError: Error {
         case divisionByZero
         case squareRootOfNegativeNumber
         case invalidNumberOnInput
+        case factorialNotDefined
     }
     
     static let maxLengthOfInput = 9
@@ -126,8 +131,12 @@ class SimpleCalculator {
                 } else {
                     self.inputMinusSign = !self.inputMinusSign
                 }
-            case .square, .squareRoot:
+            case .square, .squareRoot, .factorial, .inverse:
                 try inputNumberToRegisterX()
+                try process(operation)
+            case.pi, .euler:
+                self.registerY = self.registerX
+                self.inputNumber = nil
                 try process(operation)
             case .add, .subtract, .multiply, .divide:
                 try inputNumberToRegisterX()
@@ -163,6 +172,19 @@ class SimpleCalculator {
     /// result is back in registerX
     /// - Parameter operation: operation processed
     private func process(_ operation: Operation) throws {
+       
+        func factorial(value: Double) throws -> Double {
+            guard value.truncatingRemainder(dividingBy: 1.0) == 0 &&
+                value >= 0 && value < Double(Int.max) else { throw CalculatorError.factorialNotDefined }
+            let intValue = Int(value)
+            guard intValue > 0 else { return 1.0 }
+            var result = 1.0
+            for i in 1...intValue {
+                result *= Double(i)
+            }
+            return result
+        }
+        
         switch operation {
         case .add: self.registerX = self.registerX + self.registerY
         case .subtract: self.registerX = self.registerY - self.registerX
@@ -175,6 +197,14 @@ class SimpleCalculator {
             if self.registerX < 0 { throw CalculatorError.squareRootOfNegativeNumber }
             else { self.registerX = self.registerX.squareRoot() }
         case .plusMinus: self.registerX = -self.registerX
+        case .pi: self.registerX = Double.pi
+        case .euler: self.registerX = 2.7182818284590452353602874713527
+        case .inverse:
+            if self.registerX == 0 { throw CalculatorError.divisionByZero }
+            else { self.registerX = 1 / self.registerX }
+//        TODO:
+        case .factorial:
+            self.registerX = try factorial(value: self.registerX)
         default: break
         }
     }
