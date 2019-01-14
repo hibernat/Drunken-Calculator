@@ -14,7 +14,7 @@ Swipe display to the left to reset buttons to its initial positions.
 
 
 ### AppStore
-![Drunken Calculator](https://itunes.apple.com/us/app/drunken-calculator/id1435910628?mt=8)
+[Drunken Calculator](https://itunes.apple.com/us/app/drunken-calculator/id1435910628?mt=8)
 
 ### Requirements
 
