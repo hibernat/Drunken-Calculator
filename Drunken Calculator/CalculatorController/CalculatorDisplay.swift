@@ -40,7 +40,7 @@ class CalculatorDisplay: UILabel {
     override func drawText(in rect: CGRect) {
         let insets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
         self.font = UIFont.systemFont(ofSize: ((99*self.bounds.height/115) - 1).rounded())
-        super.drawText(in: UIEdgeInsetsInsetRect(rect, insets))
+        super.drawText(in: rect.inset(by: insets))
     }
 
 }

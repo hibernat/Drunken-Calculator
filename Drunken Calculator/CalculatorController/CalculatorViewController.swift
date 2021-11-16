@@ -134,7 +134,7 @@ class CalculatorViewController: UIViewController {
         func bringForward(tags: [Int]) {
             for tag in tags {
                 if let button = self.view.viewWithTag(tag) {
-                    self.view.bringSubview(toFront: button)
+                    self.view.bringSubviewToFront(button)
                 }
             }
         }

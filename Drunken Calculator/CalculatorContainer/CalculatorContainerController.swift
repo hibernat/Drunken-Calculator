@@ -20,8 +20,8 @@ class CalculatorContainerController: UIViewController {
         // have to add also CalculatorViewController as child controller
         let calculatorVC = CalculatorViewController(nibName: nil, bundle: nil)
         self.view.addSubview(calculatorVC.view)
-        self.addChildViewController(calculatorVC)
-        calculatorVC.didMove(toParentViewController: self)
+        self.addChild(calculatorVC)
+        calculatorVC.didMove(toParent: self)
         
         NSLayoutConstraint.activate([
             calculatorVC.view.leadingAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.leadingAnchor),
